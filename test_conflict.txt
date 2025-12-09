@@ -1,0 +1,65 @@
+-- Example file with merge conflicts to test highlighting
+
+-- Simple word change conflict
+<<<<<<< HEAD
+local greeting = "Hello"
+||||||| base
+local greeting = "Hello"
+=======
+local greeting = "Hi, World!"
+>>>>>>> feature
+
+-- Multi-line conflict with character differences
+<<<<<<< HEAD
+function calculate(a, b)
+  return a + b + 10
+end
+||||||| base
+function calculate(a, b)
+  return a + b
+end
+=======
+function calculate(x, y)
+  return x + y + 20
+end
+>>>>>>> feature
+
+-- 2-way conflict (no base) - tests mode 2
+<<<<<<< HEAD
+local config = { debug = true, verbose = false }
+=======
+local config = { debug = false, verbose = true }
+>>>>>>> feature
+
+-- Conflict where OURS == THEIRS (tests mode 1: BASE vs THEIRS)
+<<<<<<< HEAD
+local version = "2.0.0"
+||||||| base
+local version = "1.0.0"
+=======
+local version = "2.0.0"
+>>>>>>> feature
+
+-- Longer conflict with multiple inner changes
+<<<<<<< HEAD
+local user = {
+  name = "Alice Johnson",
+  email  "alice@example.com",
+  role = "admin",
+  active = true,
+}
+||||||| base
+local user = {
+  name = "Alice",
+  email = "alice@test.com",
+  role = "user",
+  active = false,
+}
+=======
+local user = {
+  name = "Alice Smith",
+  email = "alice@company.com",
+  role = "superadmin",
+  active = true,
+}
+>>>>>>> feature

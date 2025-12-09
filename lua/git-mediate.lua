@@ -1,5 +1,6 @@
 local M = {}
 
+local highlight = require("git-mediate.highlight")
 local diff = require("vscode-diff.diff")
 
 local qf_ns = vim.api.nvim_create_namespace("git-mediate-qf")
