@@ -1,6 +1,7 @@
 local M = {}
 
 local highlight = require("git-mediate.highlight")
+local select = require("git-mediate.select")
 local diff = require("vscode-diff.diff")
 
 local qf_ns = vim.api.nvim_create_namespace("git-mediate-qf")
@@ -113,6 +114,7 @@ function M.setup()
 	end, {})
 
 	vim.api.nvim_create_user_command("GitMediateToggle", highlight.cycle_diff_mode, {})
+	vim.api.nvim_create_user_command("GitMediateSelectVersion", select.version, {})
 
 	vim.keymap.set("n", "<leader>g[", ":GitMediate<CR>", { noremap = true, silent = true })
 end

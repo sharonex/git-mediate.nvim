@@ -1,14 +1,9 @@
 local M = {}
 local diff = require("vscode-diff.diff")
+local conflicts = require("git-mediate.conflicts")
 local ns_id = vim.api.nvim_create_namespace("git-mediate-conflict")
 
 local DEBOUNCE_MS = 100
-local MARKERS = {
-	ours_start = "^<<<<<<<",
-	base_start = "^|||||||",
-	separator = "^=======",
-	theirs_end = "^>>>>>>>",
-}
 
 local buf_timers = {}
 local buf_diff_modes = {}
@@ -27,77 +22,6 @@ local function setup_highlights()
 	vim.api.nvim_set_hl(0, "ConflictCharTheirs", { bg = "#d04a32", default = true })
 
 	vim.api.nvim_set_hl(0, "ConflictMarker", { fg = "#666666", default = true })
-end
-
----@param buf number Buffer handle
----@return table[] List of conflict objects
-local function parse_conflicts(buf)
-	local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-	local conflicts = {}
-	local i = 1
-
-	while i <= #lines do
-		local line = lines[i]
-
-		if line:match(MARKERS.ours_start) then
-			local conflict = {
-				start_line = i - 1, -- 0-indexed
-				ours = { start = nil, lines = {} },
-				base = nil,
-				theirs = { start = nil, lines = {} },
-				separator_line = nil,
-				base_start_line = nil,
-				end_line = nil,
-			}
-
-			i = i + 1
-			conflict.ours.start = i - 1 -- 0-indexed
-			while i <= #lines do
-				line = lines[i]
-				if line:match(MARKERS.base_start) then
-					conflict.base_start_line = i - 1
-					conflict.base = { start = nil, lines = {} }
-					i = i + 1
-					conflict.base.start = i - 1
-					while i <= #lines do
-						line = lines[i]
-						if line:match(MARKERS.separator) then
-							break
-						end
-						table.insert(conflict.base.lines, line)
-						i = i + 1
-					end
-					break
-				elseif line:match(MARKERS.separator) then
-					break
-				end
-				table.insert(conflict.ours.lines, line)
-				i = i + 1
-			end
-
-			if line:match(MARKERS.separator) then
-				conflict.separator_line = i - 1
-				i = i + 1
-				conflict.theirs.start = i - 1 -- 0-indexed
-
-				while i <= #lines do
-					line = lines[i]
-					if line:match(MARKERS.theirs_end) then
-						conflict.end_line = i - 1
-						break
-					end
-					table.insert(conflict.theirs.lines, line)
-					i = i + 1
-				end
-
-				table.insert(conflicts, conflict)
-			end
-		end
-
-		i = i + 1
-	end
-
-	return conflicts
 end
 
 local DiffMode = {
@@ -377,8 +301,8 @@ local function refresh_highlights(buf)
 	end
 
 	clear_highlights(buf)
-	local conflicts = parse_conflicts(buf)
-	for _, conflict in ipairs(conflicts) do
+	local parsed = conflicts.parse(buf)
+	for _, conflict in ipairs(parsed) do
 		highlight_conflict(buf, conflict)
 	end
 end
@@ -395,14 +319,6 @@ local function debounced_refresh(buf)
 	end)
 end
 
-local function buffer_has_conflicts(buf)
-	local result = 0
-	vim.api.nvim_buf_call(buf, function()
-		result = vim.fn.search(MARKERS.ours_start, "nw")
-	end)
-	return result ~= 0
-end
-
 local function setup_autocommands()
 	local augroup = vim.api.nvim_create_augroup("GitMediateHighlight", { clear = true })
 
@@ -411,7 +327,7 @@ local function setup_autocommands()
 		pattern = "*",
 		callback = function(args)
 			local buf = args.buf
-			if buffer_has_conflicts(buf) then
+			if conflicts.buffer_has_conflicts(buf) then
 				refresh_highlights(buf)
 			end
 		end,
@@ -422,7 +338,7 @@ local function setup_autocommands()
 		pattern = "*",
 		callback = function(args)
 			local buf = args.buf
-			if buffer_has_conflicts(buf) then
+			if conflicts.buffer_has_conflicts(buf) then
 				debounced_refresh(buf)
 			else
 				clear_highlights(buf)
